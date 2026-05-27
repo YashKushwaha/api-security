@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, UTC
 
-from .utils import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, create_refresh_token, SECONDS_IN_A_MINUTE
+from .auth import create_access_token, decode_payload, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM, create_refresh_token, SECONDS_IN_A_MINUTE
 
 
 SESSION_DURATION_MINUTES = 1 # Make it 1 minute for testing purposes
@@ -116,29 +116,7 @@ async def login(user: User, response: Response):
 class UploadRequest(BaseModel):
     filename: str
 
-def decode_payload(request: Request):
-    access_token = request.cookies.get('access_token')
-    if not access_token:
-        raise HTTPException(401, "Not logged in")
-    
-    print(f'Len token: {len(access_token)}  {access_token[:5]}...{access_token[-5:]}')
 
-    try:
-
-        payload = jwt.decode(
-            access_token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM]
-        )
-        print("Decoded payload from token => ", payload)
-        username = payload.get("sub")
-
-        if not username:
-            raise HTTPException(401, "Invalid token")
-
-    except JWTError:
-        raise HTTPException(401, "Invalid or expired token")
-    return payload
 
 @app.post('/v1/add_file')
 async def add_file(upload: UploadRequest, payload = Depends(decode_payload)):

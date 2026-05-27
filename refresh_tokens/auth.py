@@ -1,5 +1,7 @@
-from datetime import datetime, timedelta, UTC
+
+from fastapi import Request, HTTPException
 from jose import jwt, JWTError
+from datetime import datetime, timedelta, UTC
 # JOSE stands for Javascript Object Signing and Encryption
 import secrets
 
@@ -9,6 +11,30 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Set the multipier to 1 instead of 60 so that our token expires in 30 seconds instead of 30 mins 
 SECONDS_IN_A_MINUTE= 1
+
+def decode_payload(request: Request):
+    access_token = request.cookies.get('access_token')
+    if not access_token:
+        raise HTTPException(401, "Not logged in")
+    
+    print(f'Len token: {len(access_token)}  {access_token[:5]}...{access_token[-5:]}')
+
+    try:
+
+        payload = jwt.decode(
+            access_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+        print("Decoded payload from token => ", payload)
+        username = payload.get("sub")
+
+        if not username:
+            raise HTTPException(401, "Invalid token")
+
+    except JWTError:
+        raise HTTPException(401, "Invalid or expired token")
+    return payload
 
 def create_refresh_token():
     return secrets.token_hex(32)
