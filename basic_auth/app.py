@@ -3,13 +3,13 @@ import secrets
 
 app = FastAPI()
 
-db = {'admin': {"pwd": "admin123"},
+user_db = {'admin': {"pwd": "admin123"},
       'user1': {"pwd": "user123"}}
 
 sessions = {}
 
 def auth(username, password):
-    return db[username]["pwd"] == password
+    return user_db[username]["pwd"] == password
 
 @app.post("/login_v1")
 def login(username: str, password: str):
@@ -19,7 +19,7 @@ def login(username: str, password: str):
 
 @app.post("/login_v2")
 def login(username: str, password: str, response: Response):
-    user = db.get(username)
+    user = user_db.get(username)
 
     if not user or user["pwd"] != password:
         raise HTTPException(401, "Invalid credentials")
@@ -121,8 +121,7 @@ def get_files(
 #########################################################
 
 # Add ownership to files - Only owner can access the file
-db = {'admin': {"pwd": "admin123"},
-      'user1': {"pwd": "user123"}}
+
 files_db = {"admin": ["admin_file1.txt", "admin_file2.txt"],
             "user1": ["user1_file1.txt"]}
 
@@ -136,4 +135,52 @@ def get_files(
     return {
         "user": username,
         "file": file_name
+    }
+
+
+@app.post("/signup")
+def signup(username:str, password:str):
+    if username in user_db:
+        raise HTTPException(status_code=409, detail="User already exists")
+    
+    user_db[username] = dict(pwd = password)
+    print('user_db => ', user_db)
+    return {'status': 'success', "content": "User added"}
+
+#####################################################
+# Adding hashing to password instead of storing passwords as plain text 
+
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+from pydantic import BaseModel
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/v2/signup")
+def signup(username:str, password:str):
+    if username in user_db:
+        raise HTTPException(status_code=409, detail="User already exists")
+    
+    hashed_password = pwd_context.hash(password)
+    user_db[username] = dict(pwd = hashed_password)
+    print('user_db => ', user_db)
+    return {'status': 'success', "content": "User added"}
+
+@app.post("/v3/login")
+def login(data: SignupRequest):
+
+    user = user_db.get(data.username)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not pwd_context.verify(data.password, user["pwd"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    return {
+        "message": "Logged in"
     }
