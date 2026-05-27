@@ -100,12 +100,8 @@ async def login(user: User, response: Response):
 class UploadRequest(BaseModel):
     filename: str
 
-@app.post('/v1/add_file')
-async def add_file(upload: UploadRequest, request: Request):
+def decode_payload(request: Request):
     access_token = request.cookies.get('access_token')
-
-    
-    
     if not access_token:
         raise HTTPException(401, "Not logged in")
     
@@ -126,7 +122,11 @@ async def add_file(upload: UploadRequest, request: Request):
 
     except JWTError:
         raise HTTPException(401, "Invalid or expired token")
+    return payload
 
+@app.post('/v1/add_file')
+async def add_file(upload: UploadRequest, payload = Depends(decode_payload)):
+    username = payload.get("sub")
     exp = payload.get("exp")
     if exp and datetime.now(UTC) > datetime.fromtimestamp(exp, tz=UTC):
         raise HTTPException(401, "Token expired")
