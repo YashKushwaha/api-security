@@ -3,8 +3,11 @@ import secrets
 from tinydb import TinyDB, Query
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
-
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, UTC
+
+from .utils import create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
+
 
 SESSION_DURATION_MINUTES = 1 # Make it 1 minute for testing purposes
 
@@ -21,11 +24,13 @@ class User(BaseModel):
 
 app = FastAPI()
 
-database = TinyDB('database.json')
+database = TinyDB('database_jwt.json')
 user_db = database.table('users')
 user_wise_file_db = database.table('files')
 
-sessions: dict[str, dict] = {}
+
+# No need for sessions dict in JWT based auth as we are not storing any session data on server side. The token itself contains all the necessary information and is stateless.
+#sessions: dict[str, dict] = {}
 
 def add_dummy_users_to_db():
     dummy_users = [
@@ -75,21 +80,18 @@ async def login(user: User, response: Response):
     if not pwd_context.verify(user.password, user_data[0]["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    expires_at = datetime.now(UTC) + timedelta(minutes=SESSION_DURATION_MINUTES)
 
-    session_id = secrets.token_hex(16)
-    print('Session ID generated for user:', session_id)
-    
-    sessions[session_id] = {"username": user.username,"expires": expires_at}
-    
-    print('Username added to sessions => ', sessions)
     response = JSONResponse(
             content="Log In Successful",
             status_code=200
         )
     
-    response.set_cookie(key="session_id", value=session_id, httponly=True,
-                        max_age=SESSION_DURATION_MINUTES * 60, expires=SESSION_DURATION_MINUTES * 60,
+    token = create_access_token(data={"sub": user.username})
+    print("JWT Token created, Length => ", len(token))
+
+
+    response.set_cookie(key="access_token", value=token, httponly=True,
+                        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60, expires=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                         samesite="lax")
     return response
 
@@ -98,18 +100,27 @@ class UploadRequest(BaseModel):
 
 @app.post('/v1/add_file')
 async def add_file(upload: UploadRequest, request: Request):
-    session_id = request.cookies.get('session_id')
-    print('Session ID from cookie => ', session_id)
-    if not session_id:
-        raise HTTPException(401, "Not logged in")
-    print("Sessions => ", sessions)
-    session = sessions.get(session_id)
-    if not session:
-        raise HTTPException(401, "Invalid session")
+    access_token = request.cookies.get('access_token')
+    print(f'Len token: {len(access_token)}  {access_token[:5]}...{access_token[-5:]}')
     
-    if datetime.now(UTC) > sessions[session_id]["expires"]:
-        sessions.pop(session_id, None)
-        raise HTTPException(401, "Session expired")
+    if not access_token:
+        raise HTTPException(401, "Not logged in")
 
-    user_wise_file_db.insert(dict(username=session['username'], filename=upload.filename))
-    return f"File '{upload.filename}' added for user '{session['username']}'"
+    try:
+
+        payload = jwt.decode(
+            access_token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM]
+        )
+
+        username = payload.get("sub")
+
+        if not username:
+            raise HTTPException(401, "Invalid token")
+
+    except JWTError:
+        raise HTTPException(401, "Invalid or expired token")
+
+    user_wise_file_db.insert(dict(username=username, filename=upload.filename))
+    return f"File '{upload.filename}' added for user '{username}'"
