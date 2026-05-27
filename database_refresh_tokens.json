@@ -1,0 +1,28 @@
+{
+  "users": {
+    "1": {
+      "username": "admin",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$SukdgzCGcC4lxNhbSwnhXA$lOl6MqKBnaTJc+xI8HvCjGwdsDXUVuQ6RaRyzUzqt/c"
+    },
+    "2": {
+      "username": "user1",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$pRTiPMd4T4mxtlYqhRBCyA$B/sFO2XGHs91/5F997ide8cgfE6s5Ot2EdOLaMyzusQ"
+    },
+    "3": {
+      "username": "string",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$9V6L8d6717r3vhciJISQ0g$MjQKq02rI1WoA4fM979k5iWCSwLwcHS1BRp+8icli8o"
+    }
+  },
+  "refresh_tokens": {
+    "1": {
+      "refresh_token": "af40f7152efb9c99bef938acbbe427532921d86cbf78aeb0b773257545eddc34",
+      "username": "string",
+      "expires_at": 1780503997.741393
+    },
+    "2": {
+      "refresh_token": "2438c7442654c4fdfe0155b1c523855923c386539e092143ddfe62962dd4a388",
+      "username": "string",
+      "expires_at": 1780504000.336942
+    }
+  }
+}
