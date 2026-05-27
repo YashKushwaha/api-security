@@ -1,0 +1,1 @@
+The objective of this project is to learn the basic concepts of authorization and authentication while developing apis.
