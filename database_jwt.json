@@ -1,1 +1,22 @@
-{"users": {"1": {"username": "admin", "password": "$argon2id$v=19$m=65536,t=3,p=4$p7T2HuO8d04J4RwDwJhz7g$cOi/Gp83zXOfbjnppaSMGI9vJ5QBPIQV69aWL7JKFME"}, "2": {"username": "user1", "password": "$argon2id$v=19$m=65536,t=3,p=4$pdQ6J8SYk5LSGiPE+J+Tkg$5vl4dJsS5A1E7twLyeUne8JD0vyspcaEv/4uQHJgByU"}, "3": {"username": "string", "password": "$argon2id$v=19$m=65536,t=3,p=4$oRTivDdmLIWwNqYUorSW0g$v6bCjCCRH3jllaquS2w2AFgrc/TbPYG4IJtOWhzOa8E"}}}
+{
+  "users": {
+    "1": {
+      "username": "admin",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$UsoZI2Ss9V7Lufe+txYCoA$SXxM93hTWsXPhqcjqBgGpdtI0YSN7PlsDknR9zEIVEQ"
+    },
+    "2": {
+      "username": "user1",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$1FrLuXdOKaUUQqi1FqJUSg$1iYfra+KzKPqHLqDtn3XjwPGju8BO2w3cuEymn4YBSw"
+    },
+    "3": {
+      "username": "string",
+      "password": "$argon2id$v=19$m=65536,t=3,p=4$HSMkZIzRWmuN0fqfU4rxXg$CCCbCPNLpmLIqNU/LuyOwnyRVn9D+VKdZg+fjJYTyCM"
+    }
+  },
+  "files": {
+    "1": {
+      "username": "string",
+      "filename": "string"
+    }
+  }
+}

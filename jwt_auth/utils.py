@@ -13,7 +13,7 @@ def create_access_token(data: dict):
     expire = datetime.now(UTC) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
     )
-
+    # Note: jwt expects the "exp" claim to be a Unix timestamp (number of seconds since Jan 1, 1970), so it will convert 1970-01-01 00:00:00 UTC into 1779891575
     to_encode.update({
         "exp": expire
     })

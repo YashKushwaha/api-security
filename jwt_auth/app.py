@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Response, Request
 import secrets
 from tinydb import TinyDB, Query
+from tinydb.storages import JSONStorage
+
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 from jose import jwt, JWTError
@@ -24,7 +26,7 @@ class User(BaseModel):
 
 app = FastAPI()
 
-database = TinyDB('database_jwt.json')
+database = TinyDB('database_jwt.json',storage=JSONStorage, indent=2)
 user_db = database.table('users')
 user_wise_file_db = database.table('files')
 
@@ -101,10 +103,13 @@ class UploadRequest(BaseModel):
 @app.post('/v1/add_file')
 async def add_file(upload: UploadRequest, request: Request):
     access_token = request.cookies.get('access_token')
-    print(f'Len token: {len(access_token)}  {access_token[:5]}...{access_token[-5:]}')
+
+    
     
     if not access_token:
         raise HTTPException(401, "Not logged in")
+    
+    print(f'Len token: {len(access_token)}  {access_token[:5]}...{access_token[-5:]}')
 
     try:
 
@@ -113,7 +118,7 @@ async def add_file(upload: UploadRequest, request: Request):
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
-
+        print("Decoded payload from token => ", payload)
         username = payload.get("sub")
 
         if not username:
@@ -121,6 +126,10 @@ async def add_file(upload: UploadRequest, request: Request):
 
     except JWTError:
         raise HTTPException(401, "Invalid or expired token")
+
+    exp = payload.get("exp")
+    if exp and datetime.now(UTC) > datetime.fromtimestamp(exp, tz=UTC):
+        raise HTTPException(401, "Token expired")
 
     user_wise_file_db.insert(dict(username=username, filename=upload.filename))
     return f"File '{upload.filename}' added for user '{username}'"
