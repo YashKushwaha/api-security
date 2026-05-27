@@ -4,6 +4,11 @@ from tinydb import TinyDB, Query
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 
+from datetime import datetime, timedelta, UTC
+
+SESSION_DURATION_MINUTES = 1 # Make it 1 minute for testing purposes
+
+
 pwd_context = CryptContext(
     schemes=["argon2"],
     deprecated="auto"
@@ -21,7 +26,7 @@ database = TinyDB('database.json')
 user_db = database.table('users')
 user_wise_file_db = database.table('files')
 
-sessions = {}
+sessions: dict[str, dict] = {}
 
 def add_dummy_users_to_db():
     dummy_users = [
@@ -71,17 +76,22 @@ async def login(user: User, response: Response):
     if not pwd_context.verify(user.password, user_data[0]["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
+    expires_at = datetime.now(UTC) + timedelta(minutes=SESSION_DURATION_MINUTES)
+
     session_id = secrets.token_hex(16)
     print('Session ID generated for user:', session_id)
     
-    sessions[session_id] = user.username
+    sessions[session_id] = {"username": user.username,"expires": expires_at}
+    
     print('Username added to sessions => ', sessions)
     response = JSONResponse(
             content="Log In Successful",
             status_code=200
         )
     
-    response.set_cookie(key="session_id", value=session_id, httponly=True)
+    response.set_cookie(key="session_id", value=session_id, httponly=True,
+                        max_age=SESSION_DURATION_MINUTES * 60, expires=SESSION_DURATION_MINUTES * 60,
+                        samesite="lax")
     return response
 
 class UploadRequest(BaseModel):
@@ -94,9 +104,13 @@ async def add_file(upload: UploadRequest, request: Request):
     if not session_id:
         raise HTTPException(401, "Not logged in")
     print("Sessions => ", sessions)
-    username = sessions.get(session_id)
-    if not username:
+    session = sessions.get(session_id)
+    if not session:
         raise HTTPException(401, "Invalid session")
     
-    user_wise_file_db.insert(dict(username=username, filename=upload.filename))
-    return f"File '{upload.filename}' added for user '{username}'"
+    if datetime.now(UTC) > sessions[session_id]["expires"]:
+        sessions.pop(session_id, None)
+        raise HTTPException(401, "Session expired")
+
+    user_wise_file_db.insert(dict(username=session['username'], filename=upload.filename))
+    return f"File '{upload.filename}' added for user '{session['username']}'"
