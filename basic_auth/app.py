@@ -117,3 +117,23 @@ def get_files(
         "user": username,
         "file": file_name
     }
+
+#########################################################
+
+# Add ownership to files - Only owner can access the file
+db = {'admin': {"pwd": "admin123"},
+      'user1': {"pwd": "user123"}}
+files_db = {"admin": ["admin_file1.txt", "admin_file2.txt"],
+            "user1": ["user1_file1.txt"]}
+
+@app.get("/v3/myfiles/{file_name}")
+def get_files(
+    file_name: str,
+    username: str = Depends(get_current_user)
+):
+    if file_name not in files_db.get(username, []):
+        raise HTTPException(403, "You don't have access to this file")
+    return {
+        "user": username,
+        "file": file_name
+    }
